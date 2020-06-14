@@ -1,0 +1,100 @@
+<html>
+    <head>
+        <title>Multiple Strawpoll results</title>
+        <style>
+            body {
+                background: #00FF00;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chartContainer" style="height: 370px; width: 100%;"></div>
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <script>
+            // CONFIGURE put here strawpoll ids
+            let polls = ['20345407', '20345751'];
+            // CONFIGURE END
+
+            let strawpollData = {};
+            let refreshPoll = function(pollId, callback){
+                $.ajax({
+                    method: "GET",
+                    url: "https://www.strawpoll.me/api/v2/polls/" + pollId,
+                    dataType: "json",
+                    success: function(data){
+                        console.log(data);
+                        strawpollData[pollId] = data;
+                        if (typeof callback == 'function'){
+                            callback();
+                        }
+                    },
+                    error: function(){
+                        console.error("connection error");
+                    }
+                });
+            };
+            let strawpollDataToChartsAxis = function(strawpollData){
+                let responses = {};
+                for (let key in strawpollData) {
+                    if (strawpollData.hasOwnProperty(key)) {
+                        let singlePoll = strawpollData[key];
+                        let title = singlePoll.title;
+                        for (let i=0; i<singlePoll.options.length; ++i){
+                            let responseText = singlePoll.options[i];
+                            let responseVotes = singlePoll.votes[i];
+                            responses[responseText] = responses[responseText] || [];
+                            responses[responseText].push({
+                                y:responseVotes,
+                                label: title
+                            });
+                        }
+                    }
+                }
+                console.log('responses', responses);
+                return responses;
+            };
+            let drawChart = function(chartAxisData){
+                let data = [];
+                for (let key in chartAxisData) {
+                    data.push({
+                        type: "stackedBar100",
+                        toolTipContent: "{label}<br><b>{name}:</b> {y} (#percent%)",
+                        showInLegend: true,
+                        name: key,
+                        dataPoints: chartAxisData[key]
+                    });
+                }
+                console.log('data', data);
+                let chart = new CanvasJS.Chart("chartContainer", {
+                    animationEnabled: false,
+                    theme: "light2",
+                    backgroundColor: "transparent",
+                    title:{
+                        text: "Głosowanie - Sentyment"
+                    },
+                    axisY:{
+                        interval: 10,
+                        suffix: "%"
+                    },
+                    toolTip:{
+                        shared: true
+                    },
+                    data: data
+                });
+                chart.render();
+            };
+            $(document).ready(function () {
+                function load() {
+                    polls.forEach((pollId) => refreshPoll(pollId, function () {
+                        drawChart(strawpollDataToChartsAxis(strawpollData));
+                    }));
+                }
+                setInterval(function () {
+                    load();
+                }, 5000);
+                load();
+            });
+        </script>
+    </body>
+</html>
