@@ -12,3 +12,6 @@ Define strawpoll ids here:
 ```
 
 and run `results-greenscreen.html` in browser
+
+## live demo
+https://mpawlucz.github.io/strawpoll-results-for-live-stream/results-greenscreen.html
